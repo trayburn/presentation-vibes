@@ -1,0 +1,111 @@
+# This is the expected structured output from Demo 2's conversion step.
+# Used as a reference for what a correct unstructured-to-structured conversion
+# should produce. The validation script (validate.py) checks this file against
+# the schema.
+#
+# In the live demo, the LLM would produce this from the ingest documents.
+# We ship a pre-generated version so the validation script can be demonstrated
+# even without a live LLM call.
+
+project:
+  name: "Atlas"
+  description: "Lightweight task management dashboard for internal teams"
+  mvp_timeline_weeks: 4
+
+tech_stack:
+  backend: ".NET 10 Minimal API"
+  frontend: "React 19"
+  database: "PostgreSQL with EF Core"
+  testing:
+    - "xUnit (unit)"
+    - "Mvc.Testing (integration)"
+    - "Vitest (frontend components)"
+    - "Playwright (E2E)"
+    - "FluentValidation (input validation)"
+  deployment: "Docker Compose (dev), GitHub Actions + GHCR (CI/CD)"
+  error_handling: "ProblemDetails (RFC 7807)"
+
+data_model:
+  - entity_name: "Task"
+    fields:
+      - name: "Id"
+        type: "Guid"
+        required: true
+        description: "Unique identifier"
+      - name: "Title"
+        type: "string"
+        required: true
+        max_length: 200
+        description: "Task title"
+      - name: "Description"
+        type: "string"
+        required: false
+        description: "Optional task description"
+      - name: "Status"
+        type: "enum"
+        required: true
+        description: "Todo, InProgress, Done"
+      - name: "AssigneeId"
+        type: "string"
+        required: false
+        description: "ID of assigned user, nullable"
+      - name: "DueDate"
+        type: "DateTimeOffset"
+        required: false
+        description: "Optional due date"
+      - name: "CreatedAt"
+        type: "DateTimeOffset"
+        required: true
+        description: "Creation timestamp"
+      - name: "UpdatedAt"
+        type: "DateTimeOffset"
+        required: true
+        description: "Last update timestamp"
+
+business_rules:
+  - rule: "A task cannot be moved to Done without an assignee"
+    enforcement_point: "domain"
+    severity: "error"
+  - rule: "Task title is required, max 200 characters"
+    enforcement_point: "api"
+    severity: "error"
+  - rule: "Only authenticated users can create or modify tasks"
+    enforcement_point: "api"
+    severity: "error"
+  - rule: "All authenticated users can perform all operations (no role-based permissions in MVP)"
+    enforcement_point: "api"
+    severity: "warning"
+
+api_endpoints:
+  - method: "GET"
+    path: "/api/tasks"
+    description: "List tasks with optional filtering by status or assignee"
+    requires_auth: true
+  - method: "POST"
+    path: "/api/tasks"
+    description: "Create a new task"
+    requires_auth: true
+  - method: "PUT"
+    path: "/api/tasks/{id}"
+    description: "Update task status or assignee"
+    requires_auth: true
+  - method: "DELETE"
+    path: "/api/tasks/{id}"
+    description: "Delete a task"
+    requires_auth: true
+
+out_of_scope:
+  - "File attachments"
+  - "OAuth / SSO"
+  - "Real-time updates (SignalR)"
+  - "Multi-tenant support"
+  - "Role-based access control"
+  - "Per-project boards (single board only)"
+  - "Comments on tasks"
+  - "Task history / audit trail"
+
+conventions:
+  error_response_format: "ProblemDetails (RFC 7807)"
+  result_pattern: "Result<T> objects — no exceptions in domain layer"
+  ci_cd: "GitHub Actions — build, test, containerize, push to GHCR"
+  no_manual_deploys: true

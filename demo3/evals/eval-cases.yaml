@@ -1,0 +1,177 @@
+# EDD Eval Cases for Atlas Code Generation
+#
+# These are the evaluation cases that the EDD harness runs against the generated
+# code. Each case checks whether the generated code meets our team's standards.
+#
+# Eval types:
+#   regex  — Pattern matching against the generated code (deterministic)
+#   judge  — LLM judge prompt sent to deepseek/deepseek-r1-0731 via Ollama Cloud
+#
+# Each case has:
+#   id: unique identifier
+#   name: human-readable name
+#   type: regex | judge
+#   pattern: regex pattern (for type=regex)
+#   should_match: true if the pattern SHOULD be found, false if it should NOT
+#   prompt: judge prompt (for type=judge)
+#   min_score: minimum acceptable score 0.0-1.0 (for type=judge)
+
+evals:
+  # --- Regex Evals: Team Opinions as Code Checks ---
+
+  - id: regex-01-result-pattern
+    name: "Result<T> pattern is used"
+    type: regex
+    pattern: 'Result<'
+    should_match: true
+    description: "Code must use Result<T> pattern, not exceptions"
+
+  - id: regex-02-no-throw
+    name: "No throw statements in domain layer"
+    type: regex
+    pattern: 'throw\s+new\s+'
+    should_match: false
+    description: "Domain layer must not throw exceptions — use Result<T> instead"
+    file_filter: "Task*.cs"
+
+  - id: regex-03-problemdetails
+    name: "ProblemDetails used for error responses"
+    type: regex
+    pattern: 'ProblemDetails|ProblemHttpResult|TypedResults\.Problem'
+    should_match: true
+    description: "All error responses must use ProblemDetails (RFC 7807) or ProblemHttpResult"
+
+  - id: regex-04-minimal-api
+    name: "Minimal API endpoints used (not controllers)"
+    type: regex
+    pattern: 'Map(Get|Post|Put|Delete)\s*[<(]'
+    should_match: true
+    description: "Must use Minimal API MapGet/MapPost/MapPut/MapDelete, not controllers"
+
+  - id: regex-05-no-controllers
+    name: "No Controller class used"
+    type: regex
+    pattern: ':\s*(ControllerBase|Controller)\b'
+    should_match: false
+    description: "Must not use controllers — Minimal API only"
+
+  - id: regex-06-fluentvalidation
+    name: "FluentValidation used for input validation"
+    type: regex
+    pattern: 'AbstractValidator<|FluentValidation'
+    should_match: true
+    description: "Input validation must use FluentValidation, not DataAnnotations"
+
+  - id: regex-07-xunit-tests
+    name: "xUnit used for unit tests"
+    type: regex
+    pattern: '\[Fact\]|\[Theory\]'
+    should_match: true
+    description: "Unit tests must use xUnit [Fact]/[Theory] attributes"
+    file_filter: "*Tests.cs"
+
+  - id: regex-08-integration-tests
+    name: "Integration tests use WebApplicationFactory"
+    type: regex
+    pattern: 'WebApplicationFactory<'
+    should_match: true
+    description: "Integration tests must use WebApplicationFactory"
+    file_filter: "*Tests.cs"
+
+  - id: regex-09-di-registration
+    name: "DI registration via extension methods"
+    type: regex
+    pattern: 'IServiceCollection'
+    should_match: true
+    description: "Services must be registered via IServiceCollection extension methods"
+
+  - id: regex-10-ef-core
+    name: "EF Core used for data access"
+    type: regex
+    pattern: 'DbContext|DbSet<'
+    should_match: true
+    description: "Data access must use EF Core with DbContext"
+
+  # --- Judge Evals: Semantic Quality via LLM Judge ---
+
+  - id: judge-01-business-rules
+    name: "Business rules correctly implemented"
+    type: judge
+    prompt: |
+      You are evaluating generated C# code for the Atlas task management system.
+
+      Review the generated code and evaluate whether the following business rules
+      are correctly implemented:
+
+      1. A task cannot be moved to "Done" status without an assignee
+      2. Task title is required and max 200 characters
+      3. Only authenticated users can create or modify tasks
+
+      For each rule, state whether it is correctly implemented, incorrectly
+      implemented, or missing. Then provide an overall score from 0.0 to 1.0
+      where 1.0 means all rules are correctly implemented.
+
+      Respond in this exact format:
+      RULE_1: [PASS|FAIL|MISSING] - <explanation>
+      RULE_2: [PASS|FAIL|MISSING] - <explanation>
+      RULE_3: [PASS|FAIL|MISSING] - <explanation>
+      SCORE: <float between 0.0 and 1.0>
+    min_score: 0.8
+    description: "Business rules must be correctly implemented in generated code"
+
+  - id: judge-02-error-handling
+    name: "Error handling follows team conventions"
+    type: judge
+    prompt: |
+      You are evaluating generated C# code for the Atlas task management system.
+
+      Review the generated code and evaluate whether error handling follows
+      the team's conventions:
+
+      1. All service methods return Result<T> objects, never throw
+      2. All API error responses use ProblemDetails (RFC 7807)
+      3. Validation failures return 400 with validation details
+      4. Not found returns 404 with ProblemDetails
+      5. The Result<T> pattern is used consistently across all layers
+
+      For each criterion, state PASS or FAIL with a brief explanation.
+      Then provide an overall score from 0.0 to 1.0.
+
+      Respond in this exact format:
+      CRITERION_1: [PASS|FAIL] - <explanation>
+      CRITERION_2: [PASS|FAIL] - <explanation>
+      CRITERION_3: [PASS|FAIL] - <explanation>
+      CRITERION_4: [PASS|FAIL] - <explanation>
+      CRITERION_5: [PASS|FAIL] - <explanation>
+      SCORE: <float between 0.0 and 1.0>
+    min_score: 0.8
+    description: "Error handling must follow team conventions (Result<T>, ProblemDetails)"
+
+  - id: judge-03-test-coverage
+    name: "Tests cover happy path and failure cases"
+    type: judge
+    prompt: |
+      You are evaluating generated C# test code for the Atlas task management system.
+
+      Review the generated tests and evaluate whether they adequately cover:
+
+      1. Happy path for task creation (valid task created successfully)
+      2. Happy path for task update (status changed, assignee set)
+      3. Failure case: task title exceeds 200 characters
+      4. Failure case: task moved to Done without assignee (business rule)
+      5. Failure case: unauthenticated user blocked from creating tasks
+      6. Integration test for each API endpoint (GET, POST, PUT, DELETE)
+
+      For each criterion, state PASS or FAIL with a brief explanation.
+      Then provide an overall score from 0.0 to 1.0.
+
+      Respond in this exact format:
+      CRITERION_1: [PASS|FAIL] - <explanation>
+      CRITERION_2: [PASS|FAIL] - <explanation>
+      CRITERION_3: [PASS|FAIL] - <explanation>
+      CRITERION_4: [PASS|FAIL] - <explanation>
+      CRITERION_5: [PASS|FAIL] - <explanation>
+      CRITERION_6: [PASS|FAIL] - <explanation>
+      SCORE: <float between 0.0 and 1.0>
+    min_score: 0.7
+    description: "Tests must cover happy path and key failure cases"

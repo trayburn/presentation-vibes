@@ -1,0 +1,26 @@
+# Environment files — never commit secrets
+.env
+presentation-vibes-demo3.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# EDD output (generated during demo runs)
+demo3/output/edd-report.json
+demo3/output/extracted-spec.yaml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo

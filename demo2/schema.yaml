@@ -1,0 +1,146 @@
+# Project Atlas — Structured Spec Schema
+
+# This schema defines the structured output format that the LLM should produce
+# when converting unstructured meeting transcripts and notes into agent-readable
+# structured data.
+
+schema:
+  project:
+    type: object
+    required: true
+    fields:
+      name:
+        type: string
+        required: true
+        description: "Project name"
+      description:
+        type: string
+        required: true
+        description: "One-line project description"
+      mvp_timeline_weeks:
+        type: integer
+        required: true
+        description: "Estimated weeks to MVP delivery"
+
+  tech_stack:
+    type: object
+    required: true
+    fields:
+      backend:
+        type: string
+        required: true
+      frontend:
+        type: string
+        required: true
+      database:
+        type: string
+        required: true
+      testing:
+        type: array
+        required: true
+        items:
+          type: string
+      deployment:
+        type: string
+        required: true
+      error_handling:
+        type: string
+        required: true
+
+  data_model:
+    type: array
+    required: true
+    items:
+      type: object
+      fields:
+        entity_name:
+          type: string
+          required: true
+        fields:
+          type: array
+          required: true
+          items:
+            type: object
+            fields:
+              name:
+                type: string
+                required: true
+              type:
+                type: string
+                required: true
+              required:
+                type: boolean
+                required: true
+              max_length:
+                type: integer
+                required: false
+              description:
+                type: string
+                required: false
+
+  business_rules:
+    type: array
+    required: true
+    items:
+      type: object
+      fields:
+        rule:
+          type: string
+          required: true
+          description: "The business rule in plain language"
+        enforcement_point:
+          type: string
+          required: true
+          description: "Where this rule is enforced — 'domain', 'api', or 'ui'"
+        severity:
+          type: string
+          required: true
+          enum: ["error", "warning"]
+          description: "What happens when the rule is violated"
+
+  api_endpoints:
+    type: array
+    required: true
+    items:
+      type: object
+      fields:
+        method:
+          type: string
+          required: true
+          enum: ["GET", "POST", "PUT", "DELETE"]
+        path:
+          type: string
+          required: true
+        description:
+          type: string
+          required: true
+        requires_auth:
+          type: boolean
+          required: true
+
+  out_of_scope:
+    type: array
+    required: true
+    items:
+      type: string
+
+  conventions:
+    type: object
+    required: true
+    fields:
+      error_response_format:
+        type: string
+        required: true
+        description: "Standard error response format (e.g., ProblemDetails RFC 7807)"
+      result_pattern:
+        type: string
+        required: true
+        description: "Result object pattern used instead of exceptions"
+      ci_cd:
+        type: string
+        required: true
+        description: "CI/CD pipeline description"
+      no_manual_deploys:
+        type: boolean
+        required: true
+        description: "Whether manual deploys are prohibited"
